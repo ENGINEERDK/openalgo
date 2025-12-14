@@ -366,6 +366,8 @@ def setup_environment(app):
         from concurrent.futures import ThreadPoolExecutor, as_completed
         import time
 
+        from database.chart_prefs_db import ensure_chart_prefs_tables_exists
+
         db_init_functions = [
             ('Auth DB', ensure_auth_tables_exists),
             ('User DB', ensure_user_tables_exists),
@@ -379,6 +381,7 @@ def setup_environment(app):
             ('Strategy DB', ensure_strategy_tables_exists),
             ('Sandbox DB', ensure_sandbox_tables_exists),
             ('Action Center DB', ensure_action_center_tables_exists),
+            ('Chart Prefs DB', ensure_chart_prefs_tables_exists),
         ]
 
         db_init_start = time.time()
@@ -478,7 +481,7 @@ with app.app_context():
             symbol_count = cache_result['symbol_cache'].get('symbols_loaded', 0)
             auth_count = cache_result['auth_cache'].get('tokens_loaded', 0)
             if symbol_count > 0 or auth_count > 0:
-                logger.info(f"Cache restoration: {symbol_count} symbols, {auth_count} auth tokens")
+                logger.debug(f"Cache restoration: {symbol_count} symbols, {auth_count} auth tokens")
     except Exception as e:
         logger.debug(f"Cache restoration skipped: {e}")
 
