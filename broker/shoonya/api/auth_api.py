@@ -2,21 +2,61 @@ import httpx
 import hashlib
 import json
 import os
+from dotenv import load_dotenv
 from utils.httpx_client import get_httpx_client
 
-def sha256_hash(text):
+try:
+    import pyotp
+except Exception:
+    pyotp = None
+
+load_dotenv()
+
+
+def sha256_hash(text: str) -> str:
     """Generate SHA256 hash."""
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
-def authenticate_broker(userid, password, totp_code):
+
+def authenticate_broker(userid: str | None = None, password: str | None = None, totp_code: str | None = None):
     """
     Authenticate with Shoonya and return the auth token.
+
+    This function is backward compatible. If any of the parameters are None,
+    it will attempt to read values from environment variables:
+      - BROKER_USERID
+      - BROKER_PASSWORD
+      - BROKER_TOTP_SECRET (used to generate a TOTP if totp_code is not provided)
+
+    Returns:
+      (susertoken, None) on success
+      (None, error_message) on failure
     """
+    # Allow passing credentials via environment (.env)
+    if not userid:
+        userid = os.getenv('BROKER_USERID')
+    if not password:
+        password = os.getenv('BROKER_PASSWORD')
+
+    # If totp_code not provided, try generating from secret in env
+    if not totp_code:
+        totp_secret = os.getenv('BROKER_TOTP_SECRET')
+        if totp_secret:
+            if pyotp is None:
+                return None, 'pyotp is required to generate TOTP; please install pyotp'
+            try:
+                totp_code = pyotp.TOTP(totp_secret).now()
+            except Exception as e:
+                return None, f'Failed to generate TOTP from secret: {e}'
+
+    # Validate required values
+    if not userid or not password:
+        return None, 'Missing userid or password. Provide them as arguments or set BROKER_USERID and BROKER_PASSWORD in the environment.'
+
     # Get the Shoonya API key and other credentials from environment variables
     api_secretkey = os.getenv('BROKER_API_SECRET')
     vendor_code = os.getenv('BROKER_API_KEY')
-    #imei = '1234567890abcdef' # Default IMEI if not provided
-    imei = 'abc1234' # Default IMEI if not provided
+    imei = os.getenv('BROKER_IMEI', 'abc1234')  # Default IMEI if not provided
 
     try:
         # Shoonya API login URL
@@ -49,8 +89,8 @@ def authenticate_broker(userid, password, totp_code):
         # Handle the response
         if response.status_code == 200:
             data = response.json()
-            if data['stat'] == "Ok":
-                return data['susertoken'], None  # Return the token on success
+            if data.get('stat') == "Ok":
+                return data.get('susertoken'), None  # Return the token on success
             else:
                 return None, data.get('emsg', 'Authentication failed. Please try again.')
         else:

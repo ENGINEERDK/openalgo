@@ -430,6 +430,27 @@ def broker_callback(broker,para=None):
 
     elif broker == 'shoonya':  
         if request.method == 'GET':
+            # If credentials are available in environment, attempt automatic login
+            env_user = os.getenv('BROKER_USERID')
+            env_pwd = os.getenv('BROKER_PASSWORD')
+            # If both user and password present, try automatic authenticate via auth_function
+            if env_user and env_pwd:
+                try:
+                    auth_token, error_message = auth_function()
+                    forward_url = 'shoonya.html'
+                    if auth_token:
+                        # Successful authentication - handle success
+                        session['broker'] = broker
+                        return handle_auth_success(auth_token, session['user'], broker)
+                    else:
+                        # Failed - render form with error
+                        return render_template('shoonya.html', error_message=error_message)
+                except Exception as e:
+                    # If automatic login fails due to unexpected error, log and render form
+                    logger.error(f"Automatic Shoonya login failed: {e}")
+                    return render_template('shoonya.html', error_message=str(e))
+
+            # No env credentials - show the login form
             return render_template('shoonya.html')
         
         elif request.method == 'POST':
