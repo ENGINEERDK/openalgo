@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 
-{% block title %}Shoonya Authentication - OpenAlgo{% endblock %}
+{% block title %}Shoonya Authentication - MyAlgo{% endblock %}
 
 {% block content %}
 <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center py-8">
@@ -10,7 +10,7 @@
             <div class="card flex-shrink-0 w-full max-w-md shadow-2xl bg-base-100 order-1 lg:order-2">
                 <div class="card-body">
                     <div class="flex justify-center mb-6">
-                        <img class="h-20 w-auto" src="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}" alt="OpenAlgo">
+                        <img class="h-20 w-auto" src="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}" alt="MyAlgo">
                     </div>
 
                     <form action="/shoonya/callback" method="POST" class="space-y-6">
@@ -101,7 +101,7 @@
             <div class="flex-1 max-w-xl text-center lg:text-left order-2 lg:order-1">
                 <h1 class="text-4xl lg:text-5xl font-bold mb-6">Connect <span class="text-primary">Shoonya</span></h1>
                 <p class="text-lg lg:text-xl mb-8 opacity-80">
-                    Enter your Shoonya credentials to connect your trading account with OpenAlgo. You can use TOTP for verification.
+                    Enter your Shoonya credentials to connect your trading account with MyAlgo. You can use TOTP for verification.
                 </p>
                 <div class="flex flex-col gap-4">
                     <div class="alert alert-info shadow-lg">
@@ -114,7 +114,7 @@
                         </div>
                     </div>
                     <div class="flex justify-center lg:justify-start gap-4">
-                        <a href="https://docs.openalgo.in" target="_blank" rel="noopener noreferrer" class="btn btn-outline gap-2">
+                        <a href="https://momentumrobotics.in" target="_blank" rel="noopener noreferrer" class="btn btn-outline gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                             </svg>
