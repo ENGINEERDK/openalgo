@@ -15,12 +15,21 @@
             Connect algo strategies and run from any platform - Amibroker, TradingView, GoCharting, N8N, Python, GO, NodeJs, ChartInk, MetaTrader, Excel, or Google Sheets. And Recieve your Strategy Alerts to Telegram.
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            {% if session.user %}
+            <a href="{{ url_for('dashboard_bp.dashboard') }}" class="btn btn-primary">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2v10z"></path>
+                </svg>
+                Dashboard
+            </a>
+            {% else %}
             <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
                 </svg>
                 Login
             </a>
+            {% endif %}
         </div>
     </div>
 </div>

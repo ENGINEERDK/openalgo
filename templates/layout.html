@@ -46,7 +46,11 @@
             <!-- Fixed Navbar -->
             <div class="sticky top-0 z-30 flex h-16 w-full justify-center bg-base-100 bg-opacity-90 backdrop-blur transition-all duration-100">
                 <nav class="navbar w-full">
-                    {% include 'public_navbar.html' %}
+                    {% if session.user %}
+                        {% include 'navbar.html' %}
+                    {% else %}
+                        {% include 'public_navbar.html' %}
+                    {% endif %}
                 </nav>
             </div>
 

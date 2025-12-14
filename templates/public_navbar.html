@@ -17,15 +17,42 @@
         <ul class="menu menu-horizontal px-1">
             <li><a href="/" class="{{ 'active' if request.path == '/' }}">Home</a></li>
             <li><a href="/faq" class="{{ 'active' if request.path == '/faq' }}">FAQ</a></li>
-            <li><a href="https://openalgo.in/discord" target="_blank" rel="noopener noreferrer">Community</a></li>
+            <!-- <li><a href="https://openalgo.in/discord" target="_blank" rel="noopener noreferrer">Community</a></li>
             <li><a href="https://openalgo.in/roadmap" target="_blank" rel="noopener noreferrer">Roadmap</a></li>
-            <li><a href="https://docs.openalgo.in" target="_blank" rel="noopener noreferrer">Docs</a></li>
+            <li><a href="https://docs.openalgo.in" target="_blank" rel="noopener noreferrer">Docs</a></li> -->
         </ul>
     </div>
     
     <!-- Right side buttons -->
     <div class="navbar-end gap-2">
-        <a href="/download" class="btn btn-primary btn-sm">Download</a>
+        {% if session.user %}
+        <!-- User Profile when logged in -->
+        <div class="dropdown dropdown-end">
+            <label tabindex="0" class="cursor-pointer">
+                <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+                    <span class="text-lg font-medium" style="line-height: 1;">{{ session['user'][0]|upper if session.user else 'M' }}</span>
+                </div>
+            </label>
+            <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-base-100 rounded-box w-52">
+                <li>
+                    <a href="{{ url_for('dashboard_bp.dashboard') }}" class="text-base">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2v10z" />
+                        </svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.logout') }}" class="text-base">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
 
         <!-- Theme Toggle -->
         <label class="swap swap-rotate btn btn-ghost btn-circle">
