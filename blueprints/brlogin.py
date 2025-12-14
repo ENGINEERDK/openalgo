@@ -441,6 +441,7 @@ def broker_callback(broker,para=None):
                     if auth_token:
                         # Successful authentication - handle success
                         session['broker'] = broker
+                        logger.info(f"Automatic Shoonya login succeeded for user: {session.get('user')}")
                         return handle_auth_success(auth_token, session['user'], broker)
                     else:
                         # Failed - render form with error
