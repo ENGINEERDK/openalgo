@@ -6,13 +6,22 @@ from datetime import datetime, time
 import pytz
 import math
 import time as t
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # =========================
 # CONFIG
 # =========================
-API_KEY = "YOUR_API_KEY"
-HOST = "http://127.0.0.1:5000"
-WS_URL = "ws://127.0.0.1:8765"
+API_KEY = os.getenv("API_KEY")
+HOST = os.getenv("HOST", "http://127.0.0.1:5000")
+WS_URL = os.getenv("WS_URL", "ws://127.0.0.1:8765")
+
+# Validate required environment variables
+if not API_KEY:
+    raise RuntimeError("API_KEY not found in environment variables. Please set it in your .env file or PythonAnywhere environment.")
 
 STRATEGY = "Nifty_920_125Premium"
 

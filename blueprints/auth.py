@@ -33,11 +33,13 @@ def login():
     if find_user_by_username() is None:
         return redirect(url_for('core_bp.setup'))
 
-    if 'user' in session:
-            return redirect(url_for('auth.broker_login'))
-    
-    if session.get('logged_in'):
+    # Check if user has completed BOTH app login AND broker authentication
+    if session.get('logged_in') and session.get('broker') and session.get('AUTH_TOKEN'):
         return redirect(url_for('dashboard_bp.dashboard'))
+    
+    # If user is logged into app but needs broker auth, redirect to broker selection
+    if session.get('logged_in') and 'user' in session:
+        return redirect(url_for('auth.broker_login'))
 
     if request.method == 'GET':
         return render_template('login.html')
@@ -46,9 +48,18 @@ def login():
         password = request.form['password']
         
         if authenticate_user(username, password):
-            session['user'] = username  # Set the username in the session
+            # Set up the session properly for validation
+            session['user'] = username
+            session['logged_in'] = True  # Required for session validation
+            
+            # Set session expiry and login time
+            from utils.session import get_session_expiry_time, set_session_login_time
+            from flask import current_app as app
+            app.config['PERMANENT_SESSION_LIFETIME'] = get_session_expiry_time()
+            session.permanent = True
+            set_session_login_time()  # Required for session validation
+            
             logger.info(f"Login success for user: {username}")
-            # Redirect to broker login without marking as fully logged in
             return jsonify({'status': 'success'}), 200
         else:
             return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
@@ -57,7 +68,8 @@ def login():
 @limiter.limit(LOGIN_RATE_LIMIT_MIN)
 @limiter.limit(LOGIN_RATE_LIMIT_HOUR)
 def broker_login():
-    if session.get('logged_in'):
+    # Check if user has completed BOTH app login AND broker authentication
+    if session.get('logged_in') and session.get('broker') and session.get('AUTH_TOKEN'):
         return redirect(url_for('dashboard_bp.dashboard'))
     if request.method == 'GET':
         if 'user' not in session:

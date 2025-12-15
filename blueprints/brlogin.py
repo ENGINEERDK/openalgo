@@ -47,8 +47,8 @@ def broker_callback(broker,para=None):
             logger.warning(f'User not in session for {broker} callback, redirecting to login')
             return redirect(url_for('auth.login'))
 
-    if session.get('logged_in'):
-        # Store broker in session and g
+    if session.get('logged_in') and session.get('AUTH_TOKEN'):
+        # User has both app login and broker auth - redirect to dashboard
         session['broker'] = broker
         return redirect(url_for('dashboard_bp.dashboard'))
 
@@ -58,8 +58,9 @@ def broker_callback(broker,para=None):
     if not auth_function:
         return jsonify(error="Broker authentication function not found."), 404
     
-    # Initialize feed_token to None by default
+    # Initialize feed_token and user_id to None by default
     feed_token = None
+    user_id = None
     
     if broker == 'fivepaisa':
         if request.method == 'GET':
@@ -430,29 +431,31 @@ def broker_callback(broker,para=None):
 
     elif broker == 'shoonya':  
         if request.method == 'GET':
-            # If credentials are available in environment, attempt automatic login
+            # Check if automatic login is possible with environment credentials
             env_user = os.getenv('BROKER_USERID')
             env_pwd = os.getenv('BROKER_PASSWORD')
-            # If both user and password present, try automatic authenticate via auth_function
+            
             if env_user and env_pwd:
+                # Attempt automatic background authentication
                 try:
+                    logger.info("Attempting automatic Shoonya login with environment credentials")
                     auth_token, error_message = auth_function()
-                    forward_url = 'shoonya.html'
+                    
                     if auth_token:
-                        # Successful authentication - handle success
-                        session['broker'] = broker
+                        # Success - use the standard success handler like other brokers
                         logger.info(f"Automatic Shoonya login succeeded for user: {session.get('user')}")
                         return handle_auth_success(auth_token, session['user'], broker)
                     else:
-                        # Failed - render form with error
-                        return render_template('shoonya.html', error_message=error_message)
+                        # Auto-login failed - show form with error
+                        logger.error(f"Shoonya auto-login failed: {error_message}")
+                        return render_template('shoonya.html', error_message=f"Auto-login failed: {error_message}")
                 except Exception as e:
-                    # If automatic login fails due to unexpected error, log and render form
+                    # Auto-login error - show form with error  
                     logger.error(f"Automatic Shoonya login failed: {e}")
-                    return render_template('shoonya.html', error_message=str(e))
-
-            # No env credentials - show the login form
-            return render_template('shoonya.html')
+                    return render_template('shoonya.html', error_message=f"Auto-login error: {str(e)}")
+            else:
+                # No environment credentials - show manual login form
+                return render_template('shoonya.html')
         
         elif request.method == 'POST':
             userid = request.form.get('userid')
