@@ -1,5 +1,6 @@
 # 🔁 OpenAlgo Python Bot is running.
 
+import logging
 from openalgo import api
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, time
@@ -9,19 +10,23 @@ import time as t
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# =========================
+# LOGGING
+# =========================
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+# =========================
+# ENV
+# =========================
 load_dotenv()
 
-# =========================
-# CONFIG
-# =========================
-API_KEY = os.getenv("API_KEY")
-HOST = os.getenv("HOST", "http://127.0.0.1:5000")
+API_KEY = "e493641929e1d2e9b37b9b850069e8cd06788db937bce4c0155e4564cbf8b5f7"
+HOST = os.getenv("HOST_SERVER", "http://127.0.0.1:5000")
 WS_URL = os.getenv("WS_URL", "ws://127.0.0.1:8765")
-
-# Validate required environment variables
-if not API_KEY:
-    raise RuntimeError("API_KEY not found in environment variables. Please set it in your .env file or PythonAnywhere environment.")
 
 STRATEGY = "Nifty_920_125Premium"
 
@@ -31,7 +36,7 @@ OPTION_EXCHANGE = "NFO"
 
 TARGET_PREMIUM = 125
 SL_PERCENT = 25
-MAX_TRADE_LEGS = 6   # 3 CE + 3 PE
+MAX_TRADE_LEGS = 6
 
 CAPITAL = 500000
 CAPITAL_PER_SET = 150000
@@ -44,10 +49,19 @@ SQUARE_OFF_TIME = time(15, 10)
 ist = pytz.timezone("Asia/Kolkata")
 
 # =========================
+# CLIENT
+# =========================
+logger.info("Initializing OpenAlgo client")
+client = api(
+    api_key=API_KEY,
+    host=HOST,
+    ws_url=WS_URL,
+    verbose=True
+)
+
+# =========================
 # STATE
 # =========================
-client = api(api_key=API_KEY, host=HOST, ws_url=WS_URL, verbose=True)
-
 active_pair = {}
 completed_legs = 0
 can_trade = True
@@ -69,27 +83,51 @@ def round_strike(price):
     return round(price / 50) * 50
 
 # =========================
-# MARKET DATA
+# MARKET DATA (SAFE)
 # =========================
 def get_nifty_ltp():
-    q = client.quotes(symbol="NIFTY", exchange=INDEX_EXCHANGE)
-    return q["data"]["ltp"]
+    try:
+        q = client.quote(symbol="NIFTY", exchange=INDEX_EXCHANGE)
+        logger.debug(f"NIFTY quote raw: {q}")
+
+        if not isinstance(q, dict) or q.get("status") != "success":
+            logger.error(f"Quote failed: {q}")
+            return None
+
+        return q["data"]["ltp"]
+
+    except Exception:
+        logger.exception("Error fetching NIFTY LTP")
+        return None
 
 def fetch_chain(strike):
-    return client.optionschain(
-        underlying=UNDERLYING,
-        exchange=INDEX_EXCHANGE,
-        strike_price=strike,
-        depth=10
-    )
+    try:
+        chain = client.optionchain(
+            underlying=UNDERLYING,
+            exchange=INDEX_EXCHANGE,
+            strike_price=strike,
+            depth=10
+        )
+        logger.debug(f"Option chain raw: {chain}")
+
+        if chain.get("status") != "success":
+            logger.error(f"Option chain error: {chain}")
+            return None
+
+        return chain["data"]
+
+    except Exception:
+        logger.exception("Error fetching option chain")
+        return None
 
 def closest_option(options):
     return min(options, key=lambda x: abs(x["ltp"] - TARGET_PREMIUM))
 
 # =========================
-# ORDER FUNCTIONS
+# ORDERS
 # =========================
 def sell_option(symbol, qty):
+    logger.info(f"Selling {symbol} qty {qty}")
     return client.placeorder(
         strategy=STRATEGY,
         symbol=symbol,
@@ -102,6 +140,7 @@ def sell_option(symbol, qty):
 
 def place_sl(symbol, entry):
     sl = round(entry * (1 + SL_PERCENT / 100), 1)
+    logger.info(f"Placing SL for {symbol} @ {sl}")
     client.placeorder(
         strategy=STRATEGY,
         symbol=symbol,
@@ -114,74 +153,79 @@ def place_sl(symbol, entry):
     )
 
 # =========================
-# ENTRY LOGIC
+# ENTRY LOGIC (SAFE)
 # =========================
 def enter_trade():
-    global active_pair, completed_legs, can_trade
+    global active_pair, completed_legs
 
-    if not can_trade or not within_entry_time():
-        return
+    try:
+        if not can_trade or not within_entry_time():
+            return
 
-    if completed_legs >= MAX_TRADE_LEGS or active_pair:
-        return
+        if completed_legs >= MAX_TRADE_LEGS or active_pair:
+            return
 
-    nifty = get_nifty_ltp()
-    atm = round_strike(nifty)
-    chain = fetch_chain(atm)
+        nifty = get_nifty_ltp()
+        if nifty is None:
+            logger.warning("Skipping trade cycle: NIFTY LTP unavailable")
+            return
 
-    ce = closest_option(chain["CE"])
-    pe = closest_option(chain["PE"])
+        atm = round_strike(nifty)
+        chain = fetch_chain(atm)
+        if not chain:
+            return
 
-    lots = calc_lots()
-    qty = lots * LOT_SIZE
+        ce = closest_option(chain["CE"])
+        pe = closest_option(chain["PE"])
 
-    sell_option(ce["symbol"], qty)
-    sell_option(pe["symbol"], qty)
+        lots = calc_lots()
+        qty = lots * LOT_SIZE
 
-    place_sl(ce["symbol"], ce["ltp"])
-    place_sl(pe["symbol"], pe["ltp"])
+        sell_option(ce["symbol"], qty)
+        sell_option(pe["symbol"], qty)
 
-    active_pair = {
-        "CE": ce["symbol"],
-        "PE": pe["symbol"]
-    }
+        place_sl(ce["symbol"], ce["ltp"])
+        place_sl(pe["symbol"], pe["ltp"])
 
-    print(f"✅ Trade Entered | CE: {ce['symbol']} | PE: {pe['symbol']}")
+        active_pair = {"CE": ce["symbol"], "PE": pe["symbol"]}
+
+        logger.info(f"✅ Trade entered CE={ce['symbol']} PE={pe['symbol']}")
+
+    except Exception:
+        logger.exception("Unhandled exception in enter_trade")
 
 # =========================
-# WEBSOCKET CALLBACK
+# WS CALLBACK (DEFENSIVE)
 # =========================
 def on_ltp(data):
     global active_pair, completed_legs
 
-    if not active_pair:
-        return
+    try:
+        if not active_pair:
+            return
 
-    symbol = data["symbol"]
-    ltp = data["data"]["ltp"]
+        symbol = data.get("symbol")
+        ltp = data.get("data", {}).get("ltp")
 
-    if symbol not in active_pair.values():
-        return
+        if not symbol or not ltp:
+            return
 
-    pos = client.openposition(strategy=STRATEGY, symbol=symbol, exchange=OPTION_EXCHANGE)
+        if symbol not in active_pair.values():
+            return
 
-    if int(pos.get("quantity", 0)) == 0:
-        completed_legs += 1
-        active_pair.pop("CE" if "CE" in symbol else "PE", None)
+        pos = client.openposition(
+            strategy=STRATEGY,
+            symbol=symbol,
+            exchange=OPTION_EXCHANGE
+        )
 
-        # trail remaining leg
-        for s in active_pair.values():
-            trail = round(ltp * (1 + SL_PERCENT / 100), 1)
-            client.placeorder(
-                strategy=STRATEGY,
-                symbol=s,
-                exchange=OPTION_EXCHANGE,
-                action="BUY",
-                quantity=LOT_SIZE,
-                pricetype="SL-M",
-                trigger_price=trail,
-                product="MIS"
-            )
+        if int(pos.get("quantity", 0)) == 0:
+            completed_legs += 1
+            active_pair.pop("CE" if "CE" in symbol else "PE", None)
+            logger.info(f"Leg exited: {symbol}")
+
+    except Exception:
+        logger.exception("Error in WS LTP handler")
 
 # =========================
 # SCHEDULER
@@ -190,22 +234,23 @@ scheduler = BackgroundScheduler(timezone=ist)
 scheduler.add_job(enter_trade, "interval", seconds=10)
 
 def square_off():
-    print("⏹ Square off triggered")
+    logger.info("⏹ Square off triggered")
     client.closeposition(strategy=STRATEGY)
 
 scheduler.add_job(square_off, "cron", hour=15, minute=10)
 scheduler.start()
 
 # =========================
-# WEBSOCKET START
+# WS START (OPTIONAL)
 # =========================
-client.connect()
-client.subscribe_ltp(
-    instruments=[
-        {"exchange": OPTION_EXCHANGE, "symbol": "*"}
-    ],
-    on_data_received=on_ltp
-)
+try:
+    client.connect()
+    client.subscribe_ltp(
+        instruments=[{"exchange": OPTION_EXCHANGE, "symbol": "*"}],
+        on_data_received=on_ltp
+    )
+except Exception:
+    logger.exception("WebSocket failed, continuing REST-only mode")
 
 # =========================
 # KEEP ALIVE
