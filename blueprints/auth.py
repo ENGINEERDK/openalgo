@@ -502,8 +502,11 @@ def logout():
         
         # Remove tokens and user information from session
         session.pop('user', None)  # Remove 'user' from session if exists
-        session.pop('broker', None)  # Remove 'user' from session if exists
-        session.pop('logged_in', None)
+        session.pop('broker', None)  # Remove 'broker' from session if exists  
+        session.pop('logged_in', None)  # Remove 'logged_in' from session if exists
+        session.pop('AUTH_TOKEN', None)  # Remove 'AUTH_TOKEN' from session if exists
+        session.pop('FEED_TOKEN', None)  # Remove 'FEED_TOKEN' from session if exists
+        session.pop('USER_ID', None)  # Remove 'USER_ID' from session if exists
 
     # Redirect to login page after logout
     return redirect(url_for('auth.login'))

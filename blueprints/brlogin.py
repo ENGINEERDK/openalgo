@@ -47,10 +47,18 @@ def broker_callback(broker,para=None):
             logger.warning(f'User not in session for {broker} callback, redirecting to login')
             return redirect(url_for('auth.login'))
 
+    # Only redirect to dashboard if user has valid auth token in both session AND database
     if session.get('logged_in') and session.get('AUTH_TOKEN'):
-        # User has both app login and broker auth - redirect to dashboard
-        session['broker'] = broker
-        return redirect(url_for('dashboard_bp.dashboard'))
+        from database.auth_db import get_auth_token
+        valid_token = get_auth_token(session.get('user'))
+        if valid_token:
+            # User has both valid session and database token - redirect to dashboard
+            session['broker'] = broker
+            return redirect(url_for('dashboard_bp.dashboard'))
+        else:
+            # Session has AUTH_TOKEN but no valid token in database - clear stale session data
+            logger.info(f"Clearing stale AUTH_TOKEN from session for user {session.get('user')}")
+            session.pop('AUTH_TOKEN', None)
 
     broker_auth_functions = app.broker_auth_functions
     auth_function = broker_auth_functions.get(f'{broker}_auth')
@@ -439,10 +447,10 @@ def broker_callback(broker,para=None):
                 # Attempt automatic background authentication
                 try:
                     logger.info("Attempting automatic Shoonya login with environment credentials")
+                    
                     auth_token, error_message = auth_function()
                     
                     if auth_token:
-                        # Success - use the standard success handler like other brokers
                         logger.info(f"Automatic Shoonya login succeeded for user: {session.get('user')}")
                         return handle_auth_success(auth_token, session['user'], broker)
                     else:

@@ -132,6 +132,10 @@ def handle_auth_success(auth_token, user_session_key, broker, feed_token=None, u
         session['FEED_TOKEN'] = feed_token  # Store feed token in session if available
     if user_id:
         session['USER_ID'] = user_id  # Store user ID in session if available
+    
+    # Ensure session['user'] is set to the user_session_key for consistency
+    # This is critical for dashboard and other components that expect session['user']
+    session['user'] = user_session_key
     session['user_session_key'] = user_session_key
     session['broker'] = broker
     
