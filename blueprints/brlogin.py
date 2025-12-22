@@ -438,33 +438,31 @@ def broker_callback(broker,para=None):
             forward_url = 'zebu.html'
 
     elif broker == 'shoonya':  
-        if request.method == 'GET':
-            # Check if automatic login is possible with environment credentials
-            env_user = os.getenv('BROKER_USERID')
-            env_pwd = os.getenv('BROKER_PASSWORD')
-            
-            if env_user and env_pwd:
-                # Attempt automatic background authentication
-                try:
-                    logger.info("Attempting automatic Shoonya login with environment credentials")
-                    
-                    auth_token, error_message = auth_function()
-                    
-                    if auth_token:
-                        logger.info(f"Automatic Shoonya login succeeded for user: {session.get('user')}")
-                        return handle_auth_success(auth_token, session['user'], broker)
-                    else:
-                        # Auto-login failed - show form with error
-                        logger.error(f"Shoonya auto-login failed: {error_message}")
-                        return render_template('shoonya.html', error_message=f"Auto-login failed: {error_message}")
-                except Exception as e:
-                    # Auto-login error - show form with error  
-                    logger.error(f"Automatic Shoonya login failed: {e}")
-                    return render_template('shoonya.html', error_message=f"Auto-login error: {str(e)}")
-            else:
-                # No environment credentials - show manual login form
-                return render_template('shoonya.html')
+        # Check if automatic login is possible with environment credentials
+        env_user = os.getenv('BROKER_USERID')
+        env_pwd = os.getenv('BROKER_PASSWORD')
         
+        if request.method == 'GET' and env_user and env_pwd:
+            # Attempt automatic background authentication like Wisdom broker
+            try:
+                logger.info("Attempting automatic Shoonya login with environment credentials")
+                auth_token, error_message = auth_function()
+                
+                if auth_token:
+                    logger.info(f"Automatic Shoonya login succeeded for user: {session.get('user')}")
+                    # Use the same pattern as other brokers - set tokens and continue to success handler
+                    forward_url = 'shoonya.html'
+                else:
+                    # Auto-login failed - show form with error
+                    logger.error(f"Shoonya auto-login failed: {error_message}")
+                    return render_template('shoonya.html', error_message=f"Auto-login failed: {error_message}")
+            except Exception as e:
+                # Auto-login error - show form with error  
+                logger.error(f"Automatic Shoonya login failed: {e}")
+                return render_template('shoonya.html', error_message=f"Auto-login error: {str(e)}")
+        elif request.method == 'GET':
+            # No environment credentials - show manual login form
+            return render_template('shoonya.html')
         elif request.method == 'POST':
             userid = request.form.get('userid')
             password = request.form.get('password')
