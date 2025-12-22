@@ -7,7 +7,7 @@ print("🔁 OpenAlgo Python Bot is running.")
 # ------------------------------------------
 client = api(
     api_key="41621d20a62b07eb1e36f6607dedebe95e3fd2c3086a1197bb1ce956d2539899",
-    host="http://ec2-15-206-185-136.ap-south-1.compute.amazonaws.com:5000/"
+    host="http://ec2-13-201-194-113.ap-south-1.compute.amazonaws.com:5000"
 )
 
 # ------------------------------------------
