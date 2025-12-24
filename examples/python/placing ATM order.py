@@ -24,6 +24,8 @@ print("NIFTY QUOTE:", quote)
 def get_next_expiry():
     """Fetch the next closest expiry date for NIFTY options"""
     try:
+        # Try weekly expiries first
+        print("Fetching NIFTY weekly expiry dates...")
         expiry_response = client.expiry(
             symbol="NIFTY",
             exchange="NFO",
@@ -31,16 +33,55 @@ def get_next_expiry():
             expirytype="weekly"
         )
         
-        if expiry_response['status'] == 'success' and expiry_response['data']:
-            # Get current week expiry (next closest)
-            next_expiry = expiry_response['data']['current_week']
-            print(f"Next closest expiry selected: {next_expiry}")
-            return next_expiry
-        else:
-            print("Failed to fetch expiry dates, using fallback date")
-            return "26DEC25"  # Fallback date
+        print(f"Expiry API Response: {expiry_response}")
+        
+        if expiry_response.get('status') == 'success' and expiry_response.get('data'):
+            data = expiry_response['data']
+            
+            # Try different possible keys for current/next expiry
+            if 'current_week' in data and data['current_week']:
+                next_expiry = data['current_week']
+                print(f"Using current_week expiry: {next_expiry}")
+                return next_expiry
+            elif 'next_week' in data and data['next_week']:
+                next_expiry = data['next_week']
+                print(f"Using next_week expiry: {next_expiry}")
+                return next_expiry
+            elif isinstance(data, list) and len(data) > 0:
+                next_expiry = data[0]
+                print(f"Using first available expiry: {next_expiry}")
+                return next_expiry
+            else:
+                print(f"Unexpected data structure: {data}")
+        
+        # If weekly fails, try monthly
+        print("Weekly expiry failed, trying monthly expiry...")
+        expiry_response = client.expiry(
+            symbol="NIFTY",
+            exchange="NFO",
+            instrumenttype="options",
+            expirytype="monthly"
+        )
+        
+        print(f"Monthly Expiry API Response: {expiry_response}")
+        
+        if expiry_response.get('status') == 'success' and expiry_response.get('data'):
+            data = expiry_response['data']
+            if 'current_month' in data and data['current_month']:
+                next_expiry = data['current_month']
+                print(f"Using current_month expiry: {next_expiry}")
+                return next_expiry
+            elif isinstance(data, list) and len(data) > 0:
+                next_expiry = data[0]
+                print(f"Using first monthly expiry: {next_expiry}")
+                return next_expiry
+        
+        print("All expiry methods failed, using fallback date")
+        return "26DEC25"  # Fallback date
+        
     except Exception as e:
-        print(f"Error fetching expiry: {e}, using fallback date")
+        print(f"Error fetching expiry: {e}")
+        print("Using fallback date")
         return "26DEC25"  # Fallback date
 
 # Get the next available expiry
