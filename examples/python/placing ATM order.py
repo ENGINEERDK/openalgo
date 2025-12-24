@@ -1,4 +1,5 @@
 from openalgo import api
+from config import API_KEY, HOST
 
 print("🔁 OpenAlgo Python Bot is running.")
 
@@ -6,8 +7,8 @@ print("🔁 OpenAlgo Python Bot is running.")
 # Initialize API client
 # ------------------------------------------
 client = api(
-    api_key="41621d20a62b07eb1e36f6607dedebe95e3fd2c3086a1197bb1ce956d2539899",
-    host="http://ec2-13-201-194-113.ap-south-1.compute.amazonaws.com:5000"
+    api_key=API_KEY,
+    host=HOST
 )
 
 # ------------------------------------------

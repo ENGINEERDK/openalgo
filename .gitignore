@@ -49,6 +49,9 @@ venv.bak/
 # Node modules
 /node_modules/
 
+# Python examples configuration (contains sensitive API credentials)
+examples/python/config.py
+
 # Build output
 /dist/
 /build/

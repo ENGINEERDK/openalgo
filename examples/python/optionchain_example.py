@@ -1,9 +1,10 @@
 from openalgo import api
+from config import API_KEY, HOST
 
-# Initialize client
+# Initialize client with parameters from config
 client = api(
-    api_key="83ad96143dd5081d033abcfd20e9108daee5708fbea404121a762bed1e498dd0",
-    host="http://127.0.0.1:5000"
+    api_key=API_KEY,
+    host=HOST
 )
 
 # -------------------------------------------------------

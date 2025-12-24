@@ -4,10 +4,10 @@ import numpy as np
 import time
 import threading
 from datetime import datetime, timedelta
+from config import API_KEY, HOST
 
-# Get API key from openalgo portal
-api_key = 'your-openalgo-api-key'
-
+# Set the API Key from config
+client = api(api_key=API_KEY, host=HOST)
 
 # Set the strategy details and trading parameters
 strategy = "EMA Crossover Python"
@@ -19,9 +19,6 @@ quantity = 1
 # EMA periods
 fast_period = 5
 slow_period = 10
-
-# Set the API Key
-client = api(api_key=api_key, host='http://127.0.0.1:5000')
 
 def calculate_ema_signals(df):
     """

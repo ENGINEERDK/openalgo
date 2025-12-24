@@ -6,6 +6,7 @@ For brokers that support 20-level depth (Dhan NSE/NFO)
 from openalgo import api
 import time
 import logging
+from config import API_KEY, HOST, WS_URL
 
 # Configure logging to see WebSocket debug output
 logging.basicConfig(
@@ -13,11 +14,11 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-# Initialize feed client with explicit parameters
+# Initialize feed client with parameters from config
 client = api(
-    api_key="7653f710c940cdf1d757b5a7d808a60f43bc7e9c0239065435861da2869ec0fc",  # Replace with your API key
-    host="http://127.0.0.1:5000",  # Replace with your API host
-    ws_url="ws://127.0.0.1:8765"  # Explicit WebSocket URL (can be different from REST API host)
+    api_key=API_KEY,
+    host=HOST,
+    ws_url=WS_URL
 )
 
 # Instruments for 20-level depth testing

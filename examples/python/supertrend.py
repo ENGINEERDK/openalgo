@@ -4,9 +4,7 @@ import numpy as np
 import time
 import threading
 from datetime import datetime, timedelta
-
-# Get API key from openalgo portal
-api_key = 'your-openalgo-api-key'
+from config import API_KEY, HOST
 
 # Set the strategy details and trading parameters
 strategy = "Supertrend Python"
@@ -19,8 +17,8 @@ quantity = 1
 atr_period = 5
 atr_multiplier = 1.0
 
-# Set the API Key
-client = api(api_key=api_key, host='http://127.0.0.1:5000')
+# Set the API Key from config
+client = api(api_key=API_KEY, host=HOST)
 
 def Supertrend(df, atr_period, multiplier):
     """

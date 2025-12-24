@@ -5,12 +5,13 @@
 from openalgo import api
 import time
 from datetime import datetime
+from config import API_KEY, HOST, WS_URL
 
-# Setup OpenAlgo client
+# Setup OpenAlgo client with parameters from config
 client = api(
-    api_key="your-openalgo-api-key",  # Replace with your API key
-    host="http://127.0.0.1:5000",  # Replace with your API host
-    ws_url="ws://127.0.0.1:8765"  # Explicit WebSocket URL (can be different from REST API host)
+    api_key=API_KEY,
+    host=HOST,
+    ws_url=WS_URL
 )
 
 # Strategy details

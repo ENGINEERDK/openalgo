@@ -1,12 +1,13 @@
 from flask import Flask, jsonify, request, render_template_string
 from openalgo import api
+from config import API_KEY, HOST
 
 app = Flask(__name__)
 
-# Initialize API client
+# Initialize API client with parameters from config
 client = api(
-    api_key="e493641929e1d2e9b37b9b850069e8cd06788db937bce4c0155e4564cbf8b5f7",
-    host="http://127.0.0.1:5000"
+    api_key=API_KEY,
+    host=HOST
 )
 
 

@@ -1,13 +1,14 @@
 from openalgo import api
 import pandas as pd
 import plotly.express as px
+from config import API_KEY, HOST
 
 # ---------------------------------------------------
 # OpenAlgo Client
 # ---------------------------------------------------
 client = api(
-    api_key="7371cc58b9d30204e5fee1d143dc8cd926bcad90c24218201ad81735384d2752",
-    host="http://127.0.0.1:5000"
+    api_key=API_KEY,
+    host=HOST
 )
 
 print("🔁 OpenAlgo Python Bot is running.")

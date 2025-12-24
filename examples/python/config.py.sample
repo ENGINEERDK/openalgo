@@ -1,0 +1,28 @@
+"""
+OpenAlgo Configuration Parameters - SAMPLE FILE
+Centralized configuration file for all Python example scripts.
+Copy this file to config.py and update with your actual values.
+"""
+
+# OpenAlgo API Configuration
+API_KEY = "your-openalgo-api-key"  # Replace with your actual API key from OpenAlgo portal
+HOST = "http://127.0.0.1:5000"      # Replace with your OpenAlgo server host
+WS_URL = "ws://127.0.0.1:8765"      # Replace with your WebSocket server URL
+
+# Alternative configuration examples:
+# 
+# For cloud deployment (AWS EC2):
+# API_KEY = "your-openalgo-api-key"
+# HOST = "http://ec2-xx-xxx-xxx-xxx.region.compute.amazonaws.com:5000"
+# WS_URL = "ws://ec2-xx-xxx-xxx-xxx.region.compute.amazonaws.com:8765"
+#
+# For custom server:
+# API_KEY = "your-openalgo-api-key"
+# HOST = "http://your-server-ip:5000"
+# WS_URL = "ws://your-server-ip:8765"
+
+# IMPORTANT SECURITY NOTES:
+# 1. Never commit the actual config.py file with real API keys
+# 2. Copy this sample to config.py and update with your credentials
+# 3. The config.py file is gitignored to prevent accidental commits
+# 4. Keep your API keys secure and don't share them publicly

@@ -2,15 +2,16 @@ from openalgo import api
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 import time
+from config import API_KEY, HOST
 
 print("🔁 OpenAlgo Python Bot is running.")
 
-# ===============================
+# =====================================
 # OpenAlgo Client
-# ===============================
+# =====================================
 client = api(
-    api_key="83ad96143dd5081d033abcfd20e9108daee5708fbea404121a762bed1e498dd0",
-    host="http://127.0.0.1:5000"
+    api_key=API_KEY,
+    host=HOST
 )
 
 NIFTY_LOT = 75    # NSE Index lot size

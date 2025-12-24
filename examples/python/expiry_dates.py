@@ -11,11 +11,12 @@ Reference: AlgoMirror Strategy Executor implementation
 
 from openalgo import api
 from datetime import datetime
+from config import API_KEY, HOST
 
-# Initialize client with explicit parameters
+# Initialize client with parameters from config
 client = api(
-    api_key="7371cc58b9d30204e5fee1d143dc8cd926bcad90c24218201ad81735384d2752",  # Replace with your API key
-    host="http://127.0.0.1:5000"  # Replace with your API host
+    api_key=API_KEY,
+    host=HOST
 )
 
 # Expiry request parameters
