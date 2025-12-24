@@ -24,64 +24,47 @@ print("NIFTY QUOTE:", quote)
 def get_next_expiry():
     """Fetch the next closest expiry date for NIFTY options"""
     try:
-        # Try weekly expiries first
-        print("Fetching NIFTY weekly expiry dates...")
+        # Fetch expiry dates using the correct SDK method
+        print("Fetching NIFTY expiry dates...")
         expiry_response = client.expiry(
             symbol="NIFTY",
             exchange="NFO",
-            instrumenttype="options",
-            expirytype="weekly"
+            instrumenttype="options"
         )
         
         print(f"Expiry API Response: {expiry_response}")
         
         if expiry_response.get('status') == 'success' and expiry_response.get('data'):
-            data = expiry_response['data']
+            expiry_dates = expiry_response['data']
             
-            # Try different possible keys for current/next expiry
-            if 'current_week' in data and data['current_week']:
-                next_expiry = data['current_week']
-                print(f"Using current_week expiry: {next_expiry}")
-                return next_expiry
-            elif 'next_week' in data and data['next_week']:
-                next_expiry = data['next_week']
-                print(f"Using next_week expiry: {next_expiry}")
-                return next_expiry
-            elif isinstance(data, list) and len(data) > 0:
-                next_expiry = data[0]
-                print(f"Using first available expiry: {next_expiry}")
-                return next_expiry
+            if isinstance(expiry_dates, list) and len(expiry_dates) > 0:
+                # Get the first (nearest) expiry date
+                next_expiry = expiry_dates[0]
+                print(f"Using nearest expiry: {next_expiry}")
+                
+                # Convert from DD-MMM-YY format to DDMMMYY format for options order
+                from datetime import datetime
+                try:
+                    # Parse the date format DD-MMM-YY (e.g., "26-DEC-25")
+                    expiry_date = datetime.strptime(next_expiry, "%d-%b-%y")
+                    # Format to DDMMMYY (e.g., "26DEC25")
+                    formatted_expiry = expiry_date.strftime("%d%b%y").upper()
+                    print(f"Formatted expiry for order: {formatted_expiry}")
+                    return formatted_expiry
+                except Exception as format_error:
+                    print(f"Date formatting error: {format_error}, using original format: {next_expiry}")
+                    return next_expiry
             else:
-                print(f"Unexpected data structure: {data}")
+                print(f"No expiry dates found in response data: {expiry_dates}")
+        else:
+            print(f"API Error: {expiry_response.get('message', 'Unknown error')}")
         
-        # If weekly fails, try monthly
-        print("Weekly expiry failed, trying monthly expiry...")
-        expiry_response = client.expiry(
-            symbol="NIFTY",
-            exchange="NFO",
-            instrumenttype="options",
-            expirytype="monthly"
-        )
-        
-        print(f"Monthly Expiry API Response: {expiry_response}")
-        
-        if expiry_response.get('status') == 'success' and expiry_response.get('data'):
-            data = expiry_response['data']
-            if 'current_month' in data and data['current_month']:
-                next_expiry = data['current_month']
-                print(f"Using current_month expiry: {next_expiry}")
-                return next_expiry
-            elif isinstance(data, list) and len(data) > 0:
-                next_expiry = data[0]
-                print(f"Using first monthly expiry: {next_expiry}")
-                return next_expiry
-        
-        print("All expiry methods failed, using fallback date")
+        print("Using fallback expiry date")
         return "26DEC25"  # Fallback date
         
     except Exception as e:
         print(f"Error fetching expiry: {e}")
-        print("Using fallback date")
+        print("Using fallback expiry date")
         return "26DEC25"  # Fallback date
 
 # Get the next available expiry
