@@ -167,85 +167,72 @@ handle_existing() {
 
 # Function to check and configure swap memory
 check_and_configure_swap() {
+    REQUIRED_SWAP_MB=3072
+
     # Get total RAM in MB
-    TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
+    TOTAL_RAM_MB=$(free -m | awk '/^Mem:/ {print $2}')
     TOTAL_RAM_GB=$((TOTAL_RAM_MB / 1024))
-    
+
     log_message "System RAM: ${TOTAL_RAM_MB}MB (${TOTAL_RAM_GB}GB)" "$BLUE"
-    
-    # Check if RAM is less than 2GB
-    if [ $TOTAL_RAM_MB -lt 2048 ]; then
-        log_message "System has less than 2GB RAM. Checking swap configuration..." "$YELLOW"
-        
-        # Check current swap
-        SWAP_TOTAL=$(free -m | grep Swap | awk '{print $2}')
-        log_message "Current swap: ${SWAP_TOTAL}MB" "$BLUE"
-        
-        if [ $SWAP_TOTAL -lt 3072 ]; then
-            log_message "Insufficient swap memory. Creating 3GB swap file..." "$YELLOW"
-            
-            # Check available disk space
-            AVAILABLE_SPACE=$(df / | tail -1 | awk '{print $4}')
-            REQUIRED_SPACE=3145728  # 3GB in KB
-            
-            if [ $AVAILABLE_SPACE -lt $REQUIRED_SPACE ]; then
-                log_message "Error: Not enough disk space for swap file" "$RED"
-                log_message "Available: ${AVAILABLE_SPACE}KB, Required: ${REQUIRED_SPACE}KB" "$RED"
-                exit 1
-            fi
-            
-            # Create swap file
-            log_message "Creating 3GB swap file at /swapfile..." "$BLUE"
-            sudo fallocate -l 3G /swapfile
-            if [ $? -ne 0 ]; then
-                # Fallback to dd if fallocate fails
-                log_message "fallocate failed, using dd instead..." "$YELLOW"
-                sudo dd if=/dev/zero of=/swapfile bs=1M count=3072 status=progress
-            fi
-            check_status "Failed to create swap file"
-            
-            # Set permissions
-            sudo chmod 600 /swapfile
-            check_status "Failed to set swap file permissions"
-            
-            # Setup swap
-            sudo mkswap /swapfile
-            check_status "Failed to setup swap"
-            
-            # Enable swap
-            sudo swapon /swapfile
-            check_status "Failed to enable swap"
-            
-            # Make swap permanent
-            if ! grep -q "/swapfile" /etc/fstab; then
-                echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
-                log_message "Swap file added to /etc/fstab for persistence" "$GREEN"
-            fi
-            
-            # Verify swap is active
-            NEW_SWAP=$(free -m | grep Swap | awk '{print $2}')
-            log_message "Swap configured successfully. Total swap: ${NEW_SWAP}MB" "$GREEN"
-            
-            # Configure swappiness for better performance
-            sudo sysctl vm.swappiness=10
-            echo "vm.swappiness=10" | sudo tee -a /etc/sysctl.conf
-            log_message "Swappiness set to 10 for better performance" "$GREEN"
-        else
-            log_message "Sufficient swap already exists: ${SWAP_TOTAL}MB" "$GREEN"
-        fi
-    else
-        log_message "System has sufficient RAM (${TOTAL_RAM_GB}GB)" "$GREEN"
-        
-        # Still check swap for optimal performance
-        SWAP_TOTAL=$(free -m | grep Swap | awk '{print $2}')
-        if [ $SWAP_TOTAL -eq 0 ]; then
-            log_message "No swap configured. Consider adding swap for optimal performance." "$YELLOW"
-        else
-            log_message "Swap configured: ${SWAP_TOTAL}MB" "$GREEN"
-        fi
+
+    # Get total active swap in MB
+    CURRENT_SWAP_MB=$(free -m | awk '/^Swap:/ {print $2}')
+    log_message "Current active swap: ${CURRENT_SWAP_MB}MB" "$BLUE"
+
+    # If RAM is sufficient, no swap enforcement
+    if [ "$TOTAL_RAM_MB" -ge 2048 ]; then
+        log_message "System has sufficient RAM. Swap check skipped." "$GREEN"
+        return 0
     fi
+
+    log_message "System has less than 2GB RAM. Swap check required." "$YELLOW"
+
+    # If swap already sufficient, DO NOTHING
+    if [ "$CURRENT_SWAP_MB" -ge "$REQUIRED_SWAP_MB" ]; then
+        log_message "Sufficient swap already present (${CURRENT_SWAP_MB}MB). Skipping swap creation." "$GREEN"
+        return 0
+    fi
+
+    log_message "Insufficient swap (${CURRENT_SWAP_MB}MB). Attempting to create swap..." "$YELLOW"
+
+    # Check available disk space in MB
+    AVAILABLE_DISK_MB=$(df --output=avail -m / | tail -1)
+
+    if [ "$AVAILABLE_DISK_MB" -lt "$REQUIRED_SWAP_MB" ]; then
+        log_message "WARNING: Not enough disk space to create additional swap." "$YELLOW"
+        log_message "Available: ${AVAILABLE_DISK_MB}MB, Required: ${REQUIRED_SWAP_MB}MB" "$YELLOW"
+        log_message "Continuing installation with existing swap (${CURRENT_SWAP_MB}MB)." "$GREEN"
+        return 0
+    fi
+
+    # Remove old swapfile if exists
+    if [ -f /swapfile ]; then
+        sudo swapoff /swapfile 2>/dev/null || true
+        sudo rm -f /swapfile
+    fi
+
+    log_message "Creating ${REQUIRED_SWAP_MB}MB swap file..." "$BLUE"
+
+    if ! sudo fallocate -l ${REQUIRED_SWAP_MB}M /swapfile 2>/dev/null; then
+        log_message "fallocate failed, using dd..." "$YELLOW"
+        sudo dd if=/dev/zero of=/swapfile bs=1M count=${REQUIRED_SWAP_MB} status=progress
+    fi
+
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+
+    # Persist swap
+    grep -q "^/swapfile" /etc/fstab || echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
+
+    # Tune swappiness
+    sudo sysctl vm.swappiness=10 >/dev/null
+    grep -q "vm.swappiness" /etc/sysctl.conf || echo "vm.swappiness=10" | sudo tee -a /etc/sysctl.conf
+
+    NEW_SWAP_MB=$(free -m | awk '/^Swap:/ {print $2}')
+    log_message "Swap configured successfully. Total swap: ${NEW_SWAP_MB}MB" "$GREEN"
 }
+
 
 # Start logging
 log_message "Starting OpenAlgo installation log at: $LOG_FILE" "$BLUE"
